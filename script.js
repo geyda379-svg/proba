@@ -1,142 +1,215 @@
 // Telegram Web App инициализация
 const tg = window.Telegram.WebApp;
 
-// Основные элементы
-const userGreeting = document.getElementById('user-greeting');
-const visitorsCount = document.getElementById('visitors');
-const siteUrl = document.getElementById('site-url');
-const repoLink = document.getElementById('repo-link');
-
 // Инициализация приложения
 function initApp() {
     // Расширяем на весь экран
     tg.expand();
     
-    // Показываем кнопку "Назад" если нужно
-    tg.BackButton.show();
-    tg.BackButton.onClick(() => {
-        tg.close();
+    // Настраиваем цветовую тему
+    tg.setHeaderColor('#0a0a0a');
+    tg.setBackgroundColor('#0a0a0a');
+    
+    // Показываем основную кнопку
+    tg.MainButton.setText("🛒 Открыть корзину");
+    tg.MainButton.setParams({
+        color: '#ff6b6b',
+        text_color: '#ffffff'
     });
+    tg.MainButton.show();
+    tg.MainButton.onClick(openCart);
     
-    // Получаем данные пользователя
-    const user = tg.initDataUnsafe.user;
+    // Готово
+    tg.ready();
+    console.log('HOT SPOT инициализирован');
+}
+
+// Данные продуктов
+const products = {
+    1: { name: "МАЛИНА КАКАШКА", price: 450, color: "#ff6b9d" },
+    2: { name: "БАНАН СПЕРМА", price: 450, color: "#ffd166" },
+    3: { name: "БАРЕБУХНЫЙ КОКТЕЙЛЬ", price: 450, color: "#06d6a0" },
+    4: { name: "ВИНОГРАДНЫЙ ЛЁД", price: 450, color: "#a663cc" },
+    5: { name: "ПЕРСИКОВЫЙ РАЙ", price: 450, color: "#ff9e6d" },
+    6: { name: "ПОЛЯРНАЯ МЯТА", price: 450, color: "#4cc9f0" }
+};
+
+// Корзина
+let cart = JSON.parse(localStorage.getItem('hotspot_cart')) || {};
+const cartBtn = document.getElementById('cartBtn');
+const cartModal = document.getElementById('cartModal');
+const closeCart = document.getElementById('closeCart');
+const cartItems = document.getElementById('cartItems');
+const cartCount = document.getElementById('cartCount');
+const cartTotalPrice = document.getElementById('cartTotalPrice');
+const checkoutBtn = document.getElementById('checkoutBtn');
+
+// Обновление корзины
+function updateCart() {
+    // Сохраняем в localStorage
+    localStorage.setItem('hotspot_cart', JSON.stringify(cart));
     
-    if (user) {
-        const userName = user.first_name || 'пользователь';
-        const userUsername = user.username ? `@${user.username}` : '';
-        
-        userGreeting.innerHTML = `
-            👋 Привет, <strong>${userName}</strong> ${userUsername}!
-            <br><small>Ваш ID: ${user.id}</small>
-        `;
+    // Обновляем счетчик
+    const totalItems = Object.values(cart).reduce((sum, item) => sum + item.quantity, 0);
+    cartCount.textContent = totalItems;
+    
+    // Обновляем основную кнопку
+    if (totalItems > 0) {
+        tg.MainButton.setText(`🛒 Корзина (${totalItems})`);
     } else {
-        userGreeting.textContent = '👋 Привет, пользователь Telegram!';
+        tg.MainButton.setText("🛒 Открыть корзину");
     }
     
-    // Устанавливаем информацию о сайте
-    siteUrl.textContent = window.location.href;
-    repoLink.textContent = 'github.com/ваш-логин/ваш-репозиторий';
-    
-    // Имитируем счетчик посетителей
-    let visitors = localStorage.getItem('visitors') || 100;
-    visitors = parseInt(visitors) + 1;
-    localStorage.setItem('visitors', visitors);
-    
-    // Анимация счетчика
-    animateCounter(visitorsCount, 0, visitors, 2000);
-    
-    // Настраиваем основную кнопку
-    tg.MainButton.setText("🎯 Главное действие");
-    tg.MainButton.setParams({
-        color: "#667eea",
-        text_color: "#ffffff"
-    });
-    tg.MainButton.onClick(() => {
-        tg.showAlert("Вы нажали главную кнопку! Отличная работа! 🚀");
-    });
-    
-    // Готово!
-    tg.ready();
-    console.log('Telegram Mini App инициализирован на GitHub Pages!');
+    // Обновляем модальное окно
+    updateCartModal();
 }
 
-// Анимация счетчика
-function animateCounter(element, start, end, duration) {
-    let startTimestamp = null;
-    const step = (timestamp) => {
-        if (!startTimestamp) startTimestamp = timestamp;
-        const progress = Math.min((timestamp - startTimestamp) / duration, 1);
-        const current = Math.floor(progress * (end - start) + start);
-        element.textContent = current.toLocaleString('ru-RU');
-        if (progress < 1) {
-            window.requestAnimationFrame(step);
+// Обновление модального окна корзины
+function updateCartModal() {
+    cartItems.innerHTML = '';
+    let total = 0;
+    
+    for (const [id, item] of Object.entries(cart)) {
+        const product = products[id];
+        const itemTotal = product.price * item.quantity;
+        total += itemTotal;
+        
+        const cartItem = document.createElement('div');
+        cartItem.className = 'cart-item';
+        cartItem.innerHTML = `
+            <div class="cart-item-info">
+                <h4>${product.name}</h4>
+                <div class="cart-item-meta">
+                    <span>${product.price} ₽ × ${item.quantity}</span>
+                </div>
+            </div>
+            <div class="cart-item-controls">
+                <button class="quantity-btn decrease" data-id="${id}">-</button>
+                <span class="quantity">${item.quantity}</span>
+                <button class="quantity-btn increase" data-id="${id}">+</button>
+                <span class="item-price">${itemTotal} ₽</span>
+            </div>
+        `;
+        cartItems.appendChild(cartItem);
+    }
+    
+    // Итого
+    cartTotalPrice.textContent = `${total} ₽`;
+    
+    // Добавляем обработчики для кнопок
+    document.querySelectorAll('.decrease').forEach(btn => {
+        btn.addEventListener('click', (e) => {
+            const id = e.target.dataset.id;
+            changeQuantity(id, -1);
+        });
+    });
+    
+    document.querySelectorAll('.increase').forEach(btn => {
+        btn.addEventListener('click', (e) => {
+            const id = e.target.dataset.id;
+            changeQuantity(id, 1);
+        });
+    });
+}
+
+// Изменение количества
+function changeQuantity(id, delta) {
+    if (!cart[id]) {
+        if (delta > 0) {
+            cart[id] = { quantity: 1 };
         }
-    };
-    window.requestAnimationFrame(step);
+    } else {
+        cart[id].quantity += delta;
+        if (cart[id].quantity <= 0) {
+            delete cart[id];
+            tg.HapticFeedback.impactOccurred('light');
+        }
+    }
+    updateCart();
+    
+    if (delta > 0) {
+        tg.HapticFeedback.impactOccurred('light');
+    }
 }
 
-// Функции для кнопок
-function showWelcome() {
-    tg.showAlert("🎉 Добро пожаловать на мой сайт!\n\nЗдесь вы можете:\n• Тестировать функции\n• Смотреть демо\n• Учиться разработке\n\nУдачи! 🚀");
+// Открытие корзины
+function openCart() {
+    cartModal.style.display = 'flex';
+    tg.HapticFeedback.impactOccurred('medium');
 }
 
-function changeTheme() {
-    const isDark = tg.colorScheme === 'dark';
+// Закрытие корзины
+function closeCartModal() {
+    cartModal.style.display = 'none';
+    tg.HapticFeedback.impactOccurred('light');
+}
+
+// Оформление заказа
+function checkout() {
+    if (Object.keys(cart).length === 0) {
+        tg.showAlert('Корзина пуста!');
+        return;
+    }
+    
+    // Формируем сообщение для заказа
+    let orderMessage = "🚀 ЗАКАЗ С HOT SPOT 🚀\n\n";
+    let total = 0;
+    
+    for (const [id, item] of Object.entries(cart)) {
+        const product = products[id];
+        const itemTotal = product.price * item.quantity;
+        total += itemTotal;
+        orderMessage += `${product.name}\n${item.quantity} × ${product.price} ₽ = ${itemTotal} ₽\n\n`;
+    }
+    
+    orderMessage += `\n💰 ИТОГО: ${total} ₽\n\n`;
+    orderMessage += `Для оформления заказа свяжитесь с менеджером:\n@hotspot_manager`;
+    
+    // Показываем подтверждение
     tg.showPopup({
-        title: 'Смена темы',
-        message: isDark ? 'Переключиться на светлую тему?' : 'Переключиться на темную тему?',
+        title: 'Подтверждение заказа',
+        message: `Общая сумма: ${total} ₽\n\nПодтвердить оформление заказа?`,
         buttons: [
-            {id: 'yes', type: 'default', text: 'Да'},
-            {id: 'no', type: 'destructive', text: 'Нет'}
+            {id: 'confirm', type: 'default', text: '✅ Подтвердить'},
+            {id: 'cancel', type: 'destructive', text: '❌ Отмена'}
         ]
     }, (buttonId) => {
-        if (buttonId === 'yes') {
-            tg.showAlert(`Тема изменена на ${isDark ? 'светлую' : 'темную'}!`);
+        if (buttonId === 'confirm') {
+            // Отправляем данные в Telegram
+            tg.sendData(JSON.stringify({
+                action: 'order',
+                cart: cart,
+                total: total,
+                timestamp: new Date().toISOString()
+            }));
+            
+            tg.showAlert('Заказ отправлен! Менеджер свяжется с вами в течение 5 минут.');
+            
+            // Очищаем корзину
+            cart = {};
+            updateCart();
+            closeCartModal();
+            
+            tg.HapticFeedback.notificationOccurred('success');
         }
     });
 }
 
-function showPopup() {
-    tg.showPopup({
-        title: 'Диалоговое окно',
-        message: 'Это всплывающее окно из Telegram Web Apps SDK',
-        buttons: [
-            {id: 'ok', type: 'ok', text: 'OK'},
-            {id: 'cancel', type: 'cancel', text: 'Отмена'}
-        ]
-    }, (buttonId) => {
-        tg.showAlert(`Вы выбрали: ${buttonId === 'ok' ? 'OK 👍' : 'Отмена 👎'}`);
-    });
-}
-
-// Обновление времени
-function updateTime() {
-    const now = new Date();
-    const options = { 
-        year: 'numeric', 
-        month: 'long', 
-        day: 'numeric',
-        hour: '2-digit',
-        minute: '2-digit'
-    };
-    document.getElementById('update-time').textContent = 
-        now.toLocaleDateString('ru-RU', options);
-}
-
-// Инициализация при загрузке
+// Инициализация событий
 document.addEventListener('DOMContentLoaded', () => {
     initApp();
-    updateTime();
     
-    // Обновляем время каждую минуту
-    setInterval(updateTime, 60000);
-});
-
-// Обработка событий Telegram
-tg.onEvent('themeChanged', () => {
-    tg.showAlert('Тема изменена системой!');
-});
-
-tg.onEvent('viewportChanged', () => {
-    console.log('Размер окна изменен');
-});
+    // Обработчики кнопок "Добавить в корзину"
+    document.querySelectorAll('.add-to-cart').forEach(btn => {
+        btn.addEventListener('click', (e) => {
+            const id = e.target.closest('.add-to-cart').dataset.id;
+            changeQuantity(id, 1);
+            
+            // Анимация кнопки
+            const button = e.target.closest('.add-to-cart');
+            button.innerHTML = '<i class="fas fa-check"></i>';
+            button.style.background = '#2ed573';
+            
+            setTimeout(() => {
+                button.innerHTML = '<i class="fas fa-plus"></i>';
+                button.style.background = 'linear-gradient(135deg, #ff6b6b, #ffa500
