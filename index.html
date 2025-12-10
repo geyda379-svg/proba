@@ -1,0 +1,101 @@
+<!DOCTYPE html>
+<html lang="ru">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Мой сайт в Telegram</title>
+    <link rel="stylesheet" href="style.css">
+    <!-- Telegram Web App SDK -->
+    <script src="https://telegram.org/js/telegram-web-app.js"></script>
+    <!-- Иконка для красоты -->
+    <link rel="icon" href="https://telegram.org/favicon.ico">
+</head>
+<body>
+    <div class="container">
+        <header>
+            <div class="logo">
+                <span class="logo-icon">📱</span>
+                <h1>Мой TG Сайт</h1>
+            </div>
+            <p class="tagline">Работает на GitHub Pages</p>
+        </header>
+
+        <main>
+            <section class="hero">
+                <div class="hero-content">
+                    <h2>🎉 Добро пожаловать!</h2>
+                    <p id="user-greeting">Загружаем данные из Telegram...</p>
+                    
+                    <div class="stats">
+                        <div class="stat-card">
+                            <span class="stat-number" id="visitors">0</span>
+                            <span class="stat-label">Посетителей</span>
+                        </div>
+                        <div class="stat-card">
+                            <span class="stat-number">24/7</span>
+                            <span class="stat-label">Доступен</span>
+                        </div>
+                        <div class="stat-card">
+                            <span class="stat-number">100%</span>
+                            <span class="stat-label">Бесплатно</span>
+                        </div>
+                    </div>
+                </div>
+            </section>
+
+            <section class="features">
+                <h3>✨ Возможности сайта</h3>
+                <div class="feature-grid">
+                    <div class="feature">
+                        <div class="feature-icon">⚡</div>
+                        <h4>Мгновенная загрузка</h4>
+                        <p>Быстрая работа в Telegram</p>
+                    </div>
+                    <div class="feature">
+                        <div class="feature-icon">📊</div>
+                        <h4>Аналитика</h4>
+                        <p>Следим за посещаемостью</p>
+                    </div>
+                    <div class="feature">
+                        <div class="feature-icon">🔄</div>
+                        <h4>Обновления</h4>
+                        <p>Автоматически с GitHub</p>
+                    </div>
+                </div>
+            </section>
+
+            <section class="actions">
+                <button class="btn btn-primary" onclick="showWelcome()">
+                    👋 Поздороваться
+                </button>
+                <button class="btn btn-secondary" onclick="changeTheme()">
+                    🎨 Сменить тему
+                </button>
+                <button class="btn btn-success" onclick="showPopup()">
+                    💬 Открыть диалог
+                </button>
+            </section>
+
+            <section class="info">
+                <h3>📌 Информация</h3>
+                <div class="info-content">
+                    <p><strong>Ссылка на сайт:</strong> <span id="site-url">Загрузка...</span></p>
+                    <p><strong>GitHub репозиторий:</strong> <span id="repo-link">Загрузка...</span></p>
+                    <p><strong>Последнее обновление:</strong> <span id="update-time">Сегодня</span></p>
+                </div>
+            </section>
+        </main>
+
+        <footer>
+            <p>🚀 Размещено на <strong>GitHub Pages</strong></p>
+            <p class="footer-links">
+                <a href="https://github.com" target="_blank">GitHub</a> • 
+                <a href="https://core.telegram.org/bots/webapps" target="_blank">Telegram Docs</a> • 
+                <a href="#" onclick="tg.openTelegramLink('https://t.me/tgminiapps')">Сообщество</a>
+            </p>
+        </footer>
+    </div>
+
+    <script src="script.js"></script>
+</body>
+</html>
